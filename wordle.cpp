@@ -1,46 +1,48 @@
 # include <iostream> // in/out functions like cout
 # include <string> // library to work with strings
 # include <fstream> // library to work with files
-# include <sstream>
+# include <vector>
 
 using namespace std;
 
-string verify(string guess, string chosen_word) {
-    string clean_guess = guess.substr(0, 5); // if the user enters a word with more than 5 letters
-    
-    // transform the guessed word in uppercase
-    for(char &c : clean_guess){ // like "for char in clean_guess" and we're accessing each character by reference
-        c = toupper(c);
-    }
-    
+string verify(string guess, string chosen_word, vector <char> &array) {
     // compare the letters
-    char teste;
-    string palavra = "aaaaa";
-    for(int a = 0; a <= 4; a++){
-        for(int b = 0; b <= 4; b++){
-            if(clean_guess[a] == chosen_word[b]){
-                if(a == b){
-                    teste = clean_guess[a];
-                    break;
-                }else{
-                    teste = tolower(clean_guess[a]);
-                    break;
+    char common;
+    string palavra(5, '*');
+    
+    for(int a = 0; a < 5; a++){
+        common = '*';
+        for(int b = 0; b < 5; b++){
+            if(guess[a] == chosen_word[b]){
+                common = (a == b) ? guess[a] : tolower(guess[a]);
+                break;
+            }
+            // verifing if the array already contains the character and appending it if not
+            else{
+                if (b == 4){
+                    int add_char = 1;
+                    for (int i = 0; i < array.size(); i++) {
+                        if (array[i] == guess[a]){
+                            add_char = 0;
+                            break;
+                        } 
+                    }
+                    if (add_char) array.push_back(guess[a]);
                 }
-            }else{
-                teste = '*';
-            } 
+            }
         }
-        palavra[a] = teste;
+        palavra[a] = common;
     }
     return palavra;
 }
 
-void check(string output, string chosen_word, int tries){
+void check(string output, string chosen_word, int tries, bool *finish){
     if(output == chosen_word){
-        cout << "GANHOU!" << endl;  // can't be this way
+        cout << "GANHOU!";  
+        *finish = true;
     }else{
-        if(tries == 5){
-            cout << "PERDEU!" << endl;
+        if(tries == 4){
+            cout << "PERDEU! " << chosen_word;
         }
     }
 }
@@ -54,11 +56,6 @@ int main(){
         return 1; // Exit with error code
     }
     
-    // getting the amount of words in the file and transforming it into an integer
-    string amount;
-    getline(words_file, amount);
-    int number_of_words = stoi(amount); // stoi stands for String TO Integer
-    
     // reading the key word from the user
     int key;
     cin >> key;
@@ -68,15 +65,29 @@ int main(){
     for(int i = 0; i<key; i++){
         getline(words_file, chosen_word);
     }
+    chosen_word.erase(chosen_word.find_last_not_of(" \n\r\t") + 1); // trimming white spaces after reading the word
     
     int tries = 0;
-    while(tries <= 5){
+    bool finish = false;
+    vector <char> array;
+    array.reserve(25); // reserving 25 positions (5 tries x 5 letters)
+    
+    while(tries < 5 && finish == false){
         string guess;
         cin >> guess;
         
-        string output = verify(guess, chosen_word);
-        cout << output << endl;
-        check(output, chosen_word, tries);
+        string output = verify(guess, chosen_word, array);
+        cout << output << ' ';
+        
+        // showing the letters that don't belong to the word
+        cout << '(';
+        for (int i = 0; i < array.size(); i++) {
+            cout << array[i];
+        }
+        cout << ')' << endl;
+        
+        check(output, chosen_word, tries, &finish);
+        
         tries ++;
     }
     words_file.close();
